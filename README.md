@@ -1,97 +1,201 @@
 # Personal Expense Tracker
 
-A full-stack expense tracking application built with React, Express, Prisma, and SQLite.
+A full-stack expense tracking application built with React, Express (Serverless), Prisma, and PostgreSQL.
 
 ## Architecture
 
-- **Frontend**: React + Vite (deployed on Vercel)
-- **Backend**: Express + Prisma + SQLite (deployed on Railway)
-- **Database**: SQLite with Prisma ORM
+- **Frontend**: React + Vite
+- **Backend**: Vercel Serverless Functions
+- **Database**: PostgreSQL (Vercel Postgres)
+- **Deployment**: Vercel (Full Stack)
 
 ## Local Development
 
-### Backend Setup
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database (local or cloud)
 
+### Setup
+
+1. **Clone the repository**
 ```bash
-cd server
-npm install
-npx prisma migrate dev
-npm run dev
+git clone https://github.com/Anirach/antigravity-workshop.git
+cd antigravity-workshop
 ```
 
-The backend will run on `http://localhost:3000`
-
-### Frontend Setup
-
+2. **Install dependencies**
 ```bash
+# Install root dependencies (Prisma)
+npm install
+
+# Install client dependencies
 cd client
 npm install
+cd ..
+```
+
+3. **Set up environment variables**
+Create a `.env` file in the root:
+```env
+POSTGRES_PRISMA_URL="postgresql://user:password@localhost:5432/expense_tracker?pgbouncer=true"
+POSTGRES_URL_NON_POOLING="postgresql://user:password@localhost:5432/expense_tracker"
+```
+
+4. **Run database migrations**
+```bash
+npx prisma migrate dev
+```
+
+5. **Start the development servers**
+
+Backend (serverless functions):
+```bash
+npm install -g vercel
+vercel dev
+```
+
+Or run frontend separately:
+```bash
+cd client
 npm run dev
 ```
 
-The frontend will run on `http://localhost:5173`
+## Deployment to Vercel
 
-## Deployment
+### 1. Create Vercel Account
+Sign up at https://vercel.com
 
-### 1. Deploy Backend to Railway
+### 2. Create Vercel Postgres Database
 
-1. **Create Railway Account**: Sign up at https://railway.app
-2. **Create New Project**: Click "New Project" → "Deploy from GitHub repo"
-3. **Select Repository**: Choose this repository
-4. **Configure Service**:
-   - Set root directory to `/server`
-   - Railway will auto-detect Node.js
-5. **Add Environment Variables**:
-   - `DATABASE_URL`: `file:./dev.db` (Railway provides persistent storage)
-6. **Deploy**: Railway will automatically build and deploy
-7. **Get URL**: Copy the generated Railway URL (e.g., `https://your-app.railway.app`)
+1. Go to your Vercel dashboard
+2. Click "Storage" → "Create Database"
+3. Select "Postgres"
+4. Choose a name and region
+5. Click "Create"
+6. Copy the connection strings (they'll be automatically added to your project)
 
-### 2. Deploy Frontend to Vercel
+### 3. Deploy the Application
 
-1. **Create Vercel Account**: Sign up at https://vercel.com
-2. **Import Project**: Click "Add New" → "Project"
-3. **Select Repository**: Choose this repository
-4. **Configure Project**:
-   - Framework Preset: Vite
-   - Root Directory: `client`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-5. **Add Environment Variable**:
-   - Name: `VITE_API_URL`
-   - Value: `https://your-app.railway.app/api` (use your Railway URL)
-6. **Deploy**: Vercel will build and deploy automatically
+#### Option A: Deploy via Vercel Dashboard
 
-### 3. Verify Deployment
+1. Click "Add New" → "Project"
+2. Import your GitHub repository
+3. Configure:
+   - **Framework Preset**: Other
+   - **Root Directory**: `./`
+   - **Build Command**: `npm run vercel-build`
+   - **Output Directory**: `client/dist`
+4. Connect your Postgres database (Vercel will auto-populate environment variables)
+5. Click "Deploy"
 
-1. Open your Vercel frontend URL
+#### Option B: Deploy via CLI
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Login
+vercel login
+
+# Link to Postgres database
+vercel link
+
+# Deploy
+vercel --prod
+```
+
+### 4. Run Database Migrations
+
+After first deployment, run migrations:
+```bash
+vercel env pull .env.local
+npx prisma migrate deploy
+```
+
+### 5. Verify Deployment
+
+1. Open your Vercel deployment URL
 2. Add a test expense
 3. Verify it appears in the list
 4. Refresh the page to confirm persistence
 
+## Project Structure
+
+```
+.
+├── api/                    # Vercel serverless functions
+│   └── expenses.js        # Expense API endpoint
+├── client/                # Frontend application
+│   ├── src/
+│   │   ├── components/   # React components
+│   │   ├── services/     # API client
+│   │   └── App.jsx       # Main app
+│   └── package.json
+├── prisma/               # Database schema and migrations
+│   └── schema.prisma
+├── package.json          # Root dependencies (Prisma)
+├── vercel.json          # Vercel configuration
+└── README.md
+```
+
 ## Environment Variables
 
-### Backend (.env)
-```
-DATABASE_URL="file:./dev.db"
-PORT=3000
-```
+### Production (Vercel)
+Set these in Vercel Dashboard → Settings → Environment Variables:
 
-### Frontend (.env.local)
-```
-VITE_API_URL=https://your-backend.railway.app/api
+- `POSTGRES_PRISMA_URL`: Provided by Vercel Postgres (pooled connection)
+- `POSTGRES_URL_NON_POOLING`: Provided by Vercel Postgres (direct connection)
+
+### Local Development (.env)
+```env
+POSTGRES_PRISMA_URL="postgresql://user:password@localhost:5432/expense_tracker?pgbouncer=true"
+POSTGRES_URL_NON_POOLING="postgresql://user:password@localhost:5432/expense_tracker"
 ```
 
 ## Tech Stack
 
 - **Frontend**: React 19, Vite 7
-- **Backend**: Node.js, Express 5
-- **Database**: SQLite, Prisma 5
-- **Deployment**: Vercel (Frontend), Railway (Backend)
+- **Backend**: Vercel Serverless Functions
+- **Database**: PostgreSQL, Prisma 5
+- **Deployment**: Vercel
 
 ## Features
 
 - ✅ Add expenses with description, amount, and category
 - ✅ View all expenses in chronological order
-- ✅ Persistent storage with SQLite
+- ✅ Persistent storage with PostgreSQL
 - ✅ Responsive design
-- ✅ Separate backend/frontend deployment
+- ✅ Serverless architecture
+- ✅ Full-stack deployment on Vercel
+
+## Database Schema
+
+```prisma
+model Expense {
+  id          Int      @id @default(autoincrement())
+  description String
+  amount      Decimal
+  category    String
+  createdAt   DateTime @default(now())
+}
+```
+
+## API Endpoints
+
+- `GET /api/expenses` - Fetch all expenses
+- `POST /api/expenses` - Create a new expense
+
+## Troubleshooting
+
+### Migrations fail on Vercel
+Run migrations manually:
+```bash
+vercel env pull .env.local
+npx prisma migrate deploy
+```
+
+### API returns 500 error
+Check Vercel logs for database connection issues. Ensure environment variables are set correctly.
+
+### Local development issues
+Make sure PostgreSQL is running and connection strings in `.env` are correct.
